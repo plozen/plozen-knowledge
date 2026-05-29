@@ -34,13 +34,31 @@ plozen-knowledge-mcp-server
 ```text
 document_sources
   Markdown note 같은 원본 문서 1개를 나타내는 테이블.
+  source_type, source_uri, title, source_hash, metadata, ingested_at을 저장한다.
 
 document_chunks
-  검색 가능한 text chunk, vector embedding, metadata를 저장하는 테이블.
+  검색 가능한 text chunk, vector(1536) embedding, token_count, metadata를 저장하는 테이블.
+  source_id와 chunk_index로 원문 내 위치를 복원한다.
 
 search_audit_logs
   포트폴리오 증거와 debugging을 위한 query/tool 사용 로그.
+  query_text, tool_name, top_k, match_count, result_chunk_ids를 저장한다.
 ```
+
+## 1차 구현 범위
+
+- `db/migrations/001_rag_schema.sql`
+  - `document_sources`
+  - `document_chunks`
+  - `search_audit_logs`
+  - pgvector cosine search용 HNSW index
+- `db/seeds/001_demo_knowledge.sql`
+  - Obsidian 세션, PLOZEN Knowledge MOC, Todo card, architecture 문서 기준 demo chunk 10건
+  - 외부 embedding API 없이 smoke test 가능한 deterministic vector 사용
+- `db/smoke/001_similarity_search.sql`
+  - query vector 생성
+  - top-k similarity search
+  - `search_audit_logs` 기록
 
 ## 설계 메모
 

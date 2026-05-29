@@ -9,6 +9,8 @@ PLOZEN이라는 가상 회사의 내부 문서, 프로젝트 기록, 세션 로�
 - 13서버에서 PostgreSQL + pgvector 컨테이너 실행 완료
 - DB 초기화 SQL로 `vector` extension 활성화
 - 기본 vector similarity smoke test 통과
+- RAG DB schema migration 작성
+- demo knowledge seed와 top-k similarity search smoke SQL 작성
 - API, ingest pipeline, MCP server는 다음 단계로 개발 예정
 
 ## 목표 MVP
@@ -63,10 +65,42 @@ FROM pg_extension
 WHERE extname = 'vector';
 ```
 
+## RAG schema smoke test
+
+기존 DB에 RAG schema를 반영합니다.
+
+```bash
+docker exec -i plozen-knowledge-postgres psql -U plozen -d plozen_knowledge < db/migrations/001_rag_schema.sql
+```
+
+demo knowledge chunk 10건을 적재합니다. 이 seed는 외부 embedding API 없이 pgvector 검색 흐름을 검증하기 위한 deterministic vector를 사용합니다.
+
+```bash
+docker exec -i plozen-knowledge-postgres psql -U plozen -d plozen_knowledge < db/seeds/001_demo_knowledge.sql
+```
+
+similarity search smoke test를 실행합니다.
+
+```bash
+docker exec -i plozen-knowledge-postgres psql -U plozen -d plozen_knowledge < db/smoke/001_similarity_search.sql
+```
+
+예상 확인 포인트:
+
+- `document_sources` 4건 이상
+- `document_chunks` 10건 이상
+- `search_audit_logs`에 `manual_sql_smoke` 로그 1건 이상
+- top-k 결과에 source title, chunk index, cosine distance, preview가 표시됨
+
+실행 증거는 `docs/smoke-2026-05-29.md`에 기록했습니다.
+
 ## 저장소 구조
 
 ```text
 db/init/                 DB 최초 생성 시 실행되는 초기화 SQL
+db/migrations/           RAG schema migration
+db/seeds/                demo knowledge seed
+db/smoke/                SQL smoke tests
 docs/                    아키텍처와 포트폴리오 문서
 docker-compose.yml       로컬/서버 재현 실행 정의
 .env.example             공개용 환경변수 예시
@@ -78,5 +112,4 @@ docker-compose.yml       로컬/서버 재현 실행 정의
 apps/ingest/             Markdown ingest 및 embedding pipeline
 apps/api/                검색 및 관리 API
 apps/mcp-server/         에이전트 접근용 MCP tools
-db/migrations/           RAG schema migration
 ```
