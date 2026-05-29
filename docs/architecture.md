@@ -23,7 +23,7 @@ plozen-knowledge-postgres
   pgvector가 포함된 PostgreSQL 16 컨테이너.
 
 plozen-knowledge-api
-  ingest, search, health check를 담당할 예정인 FastAPI 서비스.
+  ingest, chunking, embedding, search, health check를 담당하는 FastAPI 서비스.
 
 plozen-knowledge-mcp-server
   search_knowledge 같은 tool을 제공할 예정인 MCP server.
@@ -59,6 +59,21 @@ search_audit_logs
   - query vector 생성
   - top-k similarity search
   - `search_audit_logs` 기록
+- `src/plozen_knowledge_api`
+  - FastAPI 기반 `/documents/ingest`, `/documents/upload`, `/search`
+  - Markdown heading/paragraph 기반 chunking
+  - fake/OpenAI embedding provider 분리
+  - source hash 기반 멱등 ingest
+
+## API 경계
+
+```text
+PLOZEN Console
+  -> plozen-knowledge-api
+  -> PostgreSQL + pgvector
+```
+
+Console은 Knowledge Center UI를 담당하고, `plozen-knowledge-api`는 RAG 엔진을 담당합니다. Console, MCP server, agent, n8n workflow는 DB에 직접 접근하지 않고 API 또는 MCP tool을 통해 지식 저장소를 사용합니다.
 
 ## 설계 메모
 

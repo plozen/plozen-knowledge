@@ -11,7 +11,9 @@ PLOZEN이라는 가상 회사의 내부 문서, 프로젝트 기록, 세션 로�
 - 기본 vector similarity smoke test 통과
 - RAG DB schema migration 작성
 - demo knowledge seed와 top-k similarity search smoke SQL 작성
-- API, ingest pipeline, MCP server는 다음 단계로 개발 예정
+- FastAPI 기반 ingest/search API MVP 작성
+- Markdown/text chunking과 fake/OpenAI embedding provider 분리
+- MCP server는 다음 단계로 개발 예정
 
 ## 목표 MVP
 
@@ -27,7 +29,7 @@ PLOZEN이라는 가상 회사의 내부 문서, 프로젝트 기록, 세션 로�
 - PostgreSQL 16
 - pgvector
 - Docker Compose
-- Python / FastAPI 예정
+- Python / FastAPI
 - MCP Server 예정
 - LangChain / LangGraph는 후속 포트폴리오 레이어로 추가 예정
 
@@ -39,10 +41,18 @@ PLOZEN이라는 가상 회사의 내부 문서, 프로젝트 기록, 세션 로�
 cp .env.example .env
 ```
 
-DB 컨테이너를 실행합니다.
+`.env`의 `POSTGRES_PASSWORD`와 `KNOWLEDGE_API_KEY`는 실제 값으로 설정합니다. 기본 예시는 비워두며, 비밀 값은 커밋하지 않습니다.
+
+DB 컨테이너를 실행합니다. Fresh DB에서는 `db/init/001_extensions.sql`이 pgvector extension과 RAG schema migration을 함께 적용합니다.
 
 ```bash
 docker compose up -d
+```
+
+API까지 함께 실행하려면 같은 명령을 사용합니다. API는 기본적으로 `http://localhost:8100`에서 열립니다.
+
+```bash
+docker compose up -d --build
 ```
 
 컨테이너 상태를 확인합니다.
@@ -63,6 +73,53 @@ pgvector extension을 확인합니다.
 SELECT extname, extversion
 FROM pg_extension
 WHERE extname = 'vector';
+```
+
+## API 실행
+
+개발 환경에서 직접 실행할 수 있습니다.
+
+```bash
+pip install -e ".[dev]"
+uvicorn plozen_knowledge_api.main:app --host 0.0.0.0 --port 8100 --reload
+```
+
+API 문서는 FastAPI가 자동 생성합니다.
+
+```text
+http://localhost:8100/docs
+```
+
+`/health`를 제외한 API는 기본적으로 `X-Knowledge-Api-Key` 헤더가 필요합니다. 로컬에서만 인증 없이 시험하려면 `.env`에 `ALLOW_UNAUTHENTICATED_DEV=true`를 명시적으로 설정합니다.
+
+health check:
+
+```bash
+curl http://localhost:8100/health
+```
+
+문서 ingest:
+
+```bash
+curl -X POST http://localhost:8100/documents/ingest \
+  -H "Content-Type: application/json" \
+  -H "X-Knowledge-Api-Key: $KNOWLEDGE_API_KEY" \
+  -d '{
+    "source_type": "manual_note",
+    "source_uri": "manual://rag-api-smoke",
+    "title": "RAG API Smoke",
+    "content": "# RAG API\n\nPLOZEN Knowledge는 문서를 청킹하고 embedding으로 pgvector 검색을 수행합니다.",
+    "metadata": {"project": "PLOZEN Knowledge"}
+  }'
+```
+
+검색:
+
+```bash
+curl -X POST http://localhost:8100/search \
+  -H "Content-Type: application/json" \
+  -H "X-Knowledge-Api-Key: $KNOWLEDGE_API_KEY" \
+  -d '{"query": "PLOZEN Knowledge RAG 검색", "top_k": 3}'
 ```
 
 ## RAG schema smoke test
@@ -104,12 +161,12 @@ db/smoke/                SQL smoke tests
 docs/                    아키텍처와 포트폴리오 문서
 docker-compose.yml       로컬/서버 재현 실행 정의
 .env.example             공개용 환경변수 예시
+src/plozen_knowledge_api FastAPI 기반 RAG API
+tests/                   chunking/embedding unit tests
 ```
 
 추가 예정 구조:
 
 ```text
-apps/ingest/             Markdown ingest 및 embedding pipeline
-apps/api/                검색 및 관리 API
 apps/mcp-server/         에이전트 접근용 MCP tools
 ```
