@@ -16,6 +16,40 @@ Obsidian / Markdown
   -> agent answer with source metadata
 ```
 
+## 포트폴리오 확장 로드맵
+
+1차는 pgvector 기반 Vector RAG로 완성합니다.
+
+```text
+문서
+  -> chunk
+  -> embedding
+  -> pgvector similarity search
+  -> LangChain RAG answer
+```
+
+이후 GraphRAG를 별도 확장 레이어로 붙입니다.
+
+```text
+chunk
+  -> entity extraction
+  -> relationship extraction
+  -> Neo4j graph storage
+  -> community / subgraph summary
+```
+
+최종 포트폴리오 목표는 Hybrid RAG입니다.
+
+```text
+사용자 질문
+  -> pgvector로 의미상 가까운 chunk 후보 검색
+  -> Neo4j로 관련 entity/relationship 확장
+  -> LangGraph로 검색 품질 평가, 재검색, 답변 검증
+  -> source metadata와 graph 근거를 함께 반환
+```
+
+이 구조에서 pgvector는 의미 유사도 검색을 담당하고, Neo4j/GraphRAG는 프로젝트, 기술, 문서, 에이전트, 의사결정 사이의 관계 탐색을 담당합니다.
+
 ## 실행 구성요소
 
 ```text
@@ -82,3 +116,5 @@ Console은 Knowledge Center UI를 담당하고, `plozen-knowledge-api`는 RAG �
 - RAG 시스템은 Obsidian 원문 note를 수정하지 않습니다.
 - PostgreSQL은 관계형 metadata와 vector embedding을 함께 저장합니다.
 - pgvector는 SQL에서 cosine similarity search를 가능하게 합니다.
+- GraphRAG는 1차 필수 범위가 아니라 포트폴리오 확장 단계로 둡니다.
+- 최종 Hybrid RAG에서는 pgvector 검색 결과와 Neo4j 관계 그래프를 함께 사용합니다.

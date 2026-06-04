@@ -112,13 +112,25 @@ async def upload_document(
     except UnicodeDecodeError as exc:
         raise HTTPException(status_code=400, detail="File must be UTF-8 text") from exc
 
-    return service().ingest_document(
+    return service().stage_document(
         source_type=source_type,
         source_uri=source_uri or build_upload_source_uri(filename, content),
         title=title or filename,
         content=content,
         metadata={"filename": filename, "content_type": file.content_type},
     )
+
+
+@app.post(
+    "/documents/{source_id}/vectorize",
+    response_model=IngestDocumentResponse,
+    dependencies=[Depends(require_api_key)],
+)
+def vectorize_document(source_id: str) -> dict[str, object]:
+    try:
+        return service().vectorize_document(source_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get(

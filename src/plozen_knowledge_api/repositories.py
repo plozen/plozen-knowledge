@@ -16,6 +16,77 @@ class KnowledgeRepository:
     def __init__(self, database: Database) -> None:
         self.database = database
 
+    def stage_source(
+        self,
+        *,
+        source_type: str,
+        source_uri: str,
+        title: str,
+        content: str,
+        metadata: dict[str, Any],
+    ) -> dict[str, Any]:
+        source_hash = hash_text(content)
+        staged_metadata = {
+            **metadata,
+            "raw_content": content,
+            "character_count": len(content),
+            "content_hash": source_hash,
+            "rag_status": "loaded",
+        }
+        with self.database.connection() as conn:
+            existing = conn.execute(
+                """
+                SELECT id
+                FROM document_sources
+                WHERE source_uri = %s
+                """,
+                (source_uri,),
+            ).fetchone()
+            source_row = conn.execute(
+                """
+                INSERT INTO document_sources (source_type, source_uri, title, source_hash, metadata)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (source_uri)
+                DO UPDATE SET
+                  source_type = EXCLUDED.source_type,
+                  title = EXCLUDED.title,
+                  source_hash = EXCLUDED.source_hash,
+                  metadata = EXCLUDED.metadata,
+                  updated_at = now()
+                RETURNING id
+                """,
+                (source_type, source_uri, title, source_hash, Jsonb(staged_metadata)),
+            ).fetchone()
+            source_id = source_row["id"]
+            conn.execute("DELETE FROM document_chunks WHERE source_id = %s", (source_id,))
+
+        return {
+            "source_id": str(source_id),
+            "status": "loaded" if not existing else "updated",
+            "chunk_count": 0,
+            "source_hash": source_hash,
+        }
+
+    def get_source(self, source_id: str) -> dict[str, Any] | None:
+        with self.database.connection() as conn:
+            row = conn.execute(
+                """
+                SELECT
+                  id,
+                  source_type,
+                  source_uri,
+                  title,
+                  source_hash,
+                  metadata,
+                  ingested_at,
+                  updated_at
+                FROM document_sources
+                WHERE id = %s
+                """,
+                (source_id,),
+            ).fetchone()
+        return self._serialize_row(row) if row else None
+
     def get_unchanged_source(self, *, source_uri: str, source_hash: str) -> dict[str, Any] | None:
         with self.database.connection() as conn:
             existing = conn.execute(
