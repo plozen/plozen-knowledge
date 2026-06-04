@@ -5,11 +5,16 @@ description = "PLOZEN Knowledge RAG API"
 requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.115.0",
+  "httpx>=0.28.0",
+  "mcp>=1.12.4",
   "openai>=1.0.0",
   "psycopg[binary]>=3.2.0",
   "python-multipart>=0.0.26",
   "uvicorn[standard]>=0.30.0",
 ]
+
+[project.scripts]
+plozen-knowledge-mcp = "plozen_knowledge_mcp.server:main"
 
 [project.optional-dependencies]
 dev = [

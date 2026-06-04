@@ -1,11 +1,12 @@
 import pytest
 from fastapi import HTTPException
 
-from plozen_knowledge_api import main
+from plozen_knowledge_api import config, main
 
 
 @pytest.fixture(autouse=True)
-def clear_settings_cache() -> None:
+def clear_settings_cache(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(config, "load_dotenv", lambda path=".env": None)
     main.settings.cache_clear()
     yield
     main.settings.cache_clear()
