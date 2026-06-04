@@ -57,6 +57,10 @@ def source_status(source: dict[str, Any]) -> str:
     return metadata.get("rag_status") or "loaded"
 
 
+def compact_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in metadata.items() if key != "raw_content"}
+
+
 def compact_source(source: dict[str, Any]) -> dict[str, Any]:
     metadata = source.get("metadata") or {}
     return {
@@ -67,7 +71,7 @@ def compact_source(source: dict[str, Any]) -> dict[str, Any]:
         "status": source_status(source),
         "chunk_count": source.get("chunk_count", 0),
         "character_count": metadata.get("character_count"),
-        "metadata": metadata,
+        "metadata": compact_metadata(metadata),
         "updated_at": source.get("updated_at"),
     }
 
@@ -139,4 +143,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

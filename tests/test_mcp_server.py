@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from plozen_knowledge_mcp.server import clamp_top_k, compact_search_response, compact_source
+from plozen_knowledge_mcp.server import clamp_top_k, compact_metadata, compact_search_response, compact_source
 
 
 def test_clamp_top_k_bounds_values() -> None:
@@ -57,3 +57,16 @@ def test_compact_search_response_keeps_result_contract() -> None:
 def test_compact_source_derives_vector_status() -> None:
     assert compact_source({"id": "source-1", "chunk_count": 2, "metadata": {}})["status"] == "vector"
     assert compact_source({"id": "source-2", "chunk_count": 0, "metadata": {"rag_status": "loaded"}})["status"] == "loaded"
+
+
+def test_compact_metadata_drops_raw_content() -> None:
+    assert compact_metadata(
+        {
+            "filename": "note.md",
+            "raw_content": "long source body",
+            "character_count": 16,
+        }
+    ) == {
+        "filename": "note.md",
+        "character_count": 16,
+    }
