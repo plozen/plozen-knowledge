@@ -99,3 +99,36 @@ This keeps the RAG engine reusable by Console, MCP, agents, n8n, and future apps
 `/health` is public for service checks. Other endpoints require `KNOWLEDGE_API_KEY` by default and expect the same value in `X-Knowledge-Api-Key`.
 
 The example environment file intentionally leaves secret values empty. Real secrets stay in local/server `.env` files and must not be committed. Local unauthenticated testing requires an explicit `ALLOW_UNAUTHENTICATED_DEV=true`.
+
+## Portfolio Expansion: Hybrid RAG
+
+The MVP remains Vector RAG first:
+
+```text
+documents -> chunks -> embeddings -> pgvector -> top-k search
+```
+
+The portfolio expansion path is Hybrid RAG:
+
+```text
+Vector RAG
+  pgvector retrieves semantically similar chunks.
+
+GraphRAG
+  Neo4j stores extracted entities and relationships.
+
+LangGraph
+  Orchestrates retrieve, grade, rewrite, regenerate, verify, and final answer steps.
+```
+
+Target flow:
+
+```text
+question
+  -> vector search for relevant chunks
+  -> graph expansion through related entities/relationships
+  -> answer generation with cited chunks and graph context
+  -> verification/logging
+```
+
+This gives the portfolio both a practical RAG backend and a visual Knowledge Map layer.
