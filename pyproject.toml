@@ -14,6 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
+plozen-knowledge-ingest-history = "plozen_knowledge_api.history_cli:main"
 plozen-knowledge-mcp = "plozen_knowledge_mcp.server:main"
 
 [project.optional-dependencies]
