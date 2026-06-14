@@ -8,6 +8,8 @@ from pathlib import Path
 import re
 from typing import Iterator
 
+from .vault_paths import default_vault_root
+
 
 DATE_DIR_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 HISTORY_FILENAME_PATTERN = re.compile(
@@ -50,18 +52,6 @@ class HistoryDocument:
             "agent": self.agent,
             "order": self.order,
         }
-
-
-def default_vault_root() -> Path:
-    # 서버별로 가능한 Obsidian Vault 위치를 순서대로 확인해 기본 경로를 고른다.
-    candidates = [
-        Path("/home/mhhan/ObsidianVault"),
-        Path("/mnt/server13/mhhan/ObsidianVault"),
-    ]
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-    return candidates[0]
 
 
 def parse_date(value: str | None) -> date | None:

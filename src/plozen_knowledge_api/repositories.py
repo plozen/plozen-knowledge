@@ -12,6 +12,15 @@ from .database import Database
 from .vector import uuid_array_literal, vector_literal
 
 
+def merge_search_metadata(source_metadata: Any, chunk_metadata: Any) -> dict[str, Any]:
+    source = source_metadata if isinstance(source_metadata, dict) else {}
+    chunk = chunk_metadata if isinstance(chunk_metadata, dict) else {}
+    return {
+        **source,
+        "chunk": chunk,
+    }
+
+
 class KnowledgeRepository:
     def __init__(self, database: Database) -> None:
         self.database = database
@@ -266,7 +275,8 @@ class KnowledgeRepository:
               c.chunk_index,
               c.content,
               c.token_count,
-              c.metadata,
+              c.metadata AS chunk_metadata,
+              s.metadata AS source_metadata,
               (c.embedding <=> %s::vector) AS distance
             FROM document_chunks c
             JOIN document_sources s ON s.id = c.source_id
@@ -313,6 +323,9 @@ class KnowledgeRepository:
         results = []
         for row in rows:
             item = self._serialize_row(row)
+            chunk_metadata = item.pop("chunk_metadata") or {}
+            source_metadata = item.pop("source_metadata") or {}
+            item["metadata"] = merge_search_metadata(source_metadata, chunk_metadata)
             distance = float(item["distance"])
             item["distance"] = distance
             item["score"] = 1.0 - distance
